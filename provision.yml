@@ -32,17 +32,15 @@
 
     - name: Add IP address to NO_PROXY
       lineinfile:
-        dest: /etc/environment
+        dest: ~/.profile
         regexp: '^NO_PROXY'
-        line: 'NO_PROXY=localhost,127.0.0.1,{{ ansible_eth0["ipv4"]["address"] }}'
-      become: yes
+        line: 'NO_PROXY=$NO_PROXY,{{ ansible_eth0["ipv4"]["address"] }}'
 
     - name: Add IP address to no_proxy
       lineinfile:
-        dest: /etc/environment
+        dest: ~/.profile
         regexp: '^no_proxy'
-        line: 'no_proxy=localhost,127.0.0.1,{{ ansible_eth0["ipv4"]["address"] }}'
-      become: yes
+        line: 'no_proxy=$no_proxy,{{ ansible_eth0["ipv4"]["address"] }}'
 
     - name: Source profile again to get ~/bin into PATH
       shell: source ~/.profile
