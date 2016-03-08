@@ -1,0 +1,3 @@
+#!/bin/bash
+
+connect-proxy -H {{ lookup('env', 'HTTP_PROXY') | regex_replace('^http.*\/\/(?P<host>.+):(.*)$', '\\g<host>:1080') }} $@

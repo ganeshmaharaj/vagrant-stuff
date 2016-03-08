@@ -1,0 +1,77 @@
+---
+- hosts: devstack
+  tasks:
+    - name: Install connect-proxy package
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - connect-proxy
+        - git
+      become: yes
+
+    - name: Populate gitconfig file
+      blockinfile:
+        create: yes
+        dest: ~/.gitconfig
+        block: |
+          [core]
+            gitproxy=socks-proxy
+
+    - name: Create bin directory
+      file:
+        path: ~/bin
+        state: directory
+        mode: 0755
+
+    - name: Copy socks-proxy file
+      template:
+        src: socks-proxy.j2
+        dest: ~/bin/socks-proxy
+        mode: 0755
+
+    - name: Add IP address to NO_PROXY
+      lineinfile:
+        dest: /etc/environment
+        regexp: '^NO_PROXY'
+        line: 'NO_PROXY=localhost,127.0.0.1,{{ ansible_eth0["ipv4"]["address"] }}'
+      become: yes
+
+    - name: Add IP address to no_proxy
+      lineinfile:
+        dest: /etc/environment
+        regexp: '^no_proxy'
+        line: 'no_proxy=localhost,127.0.0.1,{{ ansible_eth0["ipv4"]["address"] }}'
+      become: yes
+
+    - name: Source profile again to get ~/bin into PATH
+      shell: source ~/.profile
+      args:
+        executable: /bin/bash
+
+    - name: Clone devstack project
+      git:
+        repo: http://github.com/openstack-dev/devstack
+        dest: ~/devstack
+
+    - name: Copy local.conf for devstack
+      copy:
+        src: local.conf
+        dest: ~/devstack/local.conf
+        mode: 0744
+        backup: yes
+
+    - name: Fix up HOST_IP in local.conf
+      lineinfile:
+        dest: ~/devstack/local.conf
+        regexp: '^#HOST_IP'
+        line: 'HOST_IP={{ ansible_eth0["ipv4"]["address"] }}'
+
+    - name: Stack the system
+      shell: './stack.sh'
+      args:
+        chdir: ~/devstack
+      register: stack_out
+
+    - debug: msg=stack_out.stderr
+      when: stack_out.rc != 0
