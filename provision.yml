@@ -1,5 +1,5 @@
 ---
-- hosts: devstack
+- hosts: all
   tasks:
     - name: Install connect-proxy package
       package:
@@ -42,11 +42,6 @@
         regexp: '^no_proxy'
         line: 'no_proxy=$no_proxy,{{ ansible_eth0["ipv4"]["address"] }}'
 
-    - name: Source profile again to get ~/bin into PATH
-      shell: source ~/.profile
-      args:
-        executable: /bin/bash
-
     - name: Clone devstack project
       git:
         repo: http://github.com/openstack-dev/devstack
@@ -66,7 +61,7 @@
         line: 'HOST_IP={{ ansible_eth0["ipv4"]["address"] }}'
 
     - name: Stack the system
-      shell: './stack.sh'
+      shell: '. ~/.profile && ./stack.sh'
       args:
         chdir: ~/devstack
       register: stack_out
