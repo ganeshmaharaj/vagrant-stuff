@@ -28,8 +28,8 @@ Vagrant.configure("2") do |config|
     config.vm.define vm_name do |devstack|
       devstack.vm.hostname = vm_name
         if Vagrant.has_plugin?("vagrant-proxyconf")
-          devstack.proxy.http = (ENV['HTTP_PROXY'])
-          devstack.proxy.https = (ENV['HTTPS_PROXY'])
+          devstack.proxy.http = (ENV['HTTP_PROXY'] || ENV['http_proxy'])
+          devstack.proxy.https = (ENV['HTTPS_PROXY'] || ENV['https_proxy'])
           devstack.proxy.no_proxy = (ENV['NO_PROXY'] || 'localhost,127.0.0.1')
         end
         devstack.vm.network :private_network, ip: ip
