@@ -23,7 +23,11 @@ Vagrant.configure("2") do |config|
   if ENV['HTTP_PROXY'] || ENV['http_proxy']
     system "vagrant plugin install vagrant-proxyconf" unless Vagrant.has_plugin?("vagrant-proxyconf")
   end
+  # Enable caching to speed up package installation on second run
+  # vagrant-cachier
+  system "vagrant plugin install vagrant-cachier" unless Vagrant.has_plugin?("vagrant-cachier")
   config.vm.box = "ubuntu/trusty64"
+  config.cache.scope = :box
   hosts.each do|vm_name, ip|
     config.vm.define vm_name do |devstack|
       devstack.vm.hostname = vm_name

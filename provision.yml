@@ -1,6 +1,12 @@
 ---
 - hosts: all
   tasks:
+    - name: Update Ubuntu packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+      become: yes
+
     - name: Install connect-proxy package
       package:
         name: "{{ item }}"
