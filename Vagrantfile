@@ -18,6 +18,7 @@ end
 
 # Static Values
 host_port = 8000
+proxy_ip_list = ""
 # Start the vagrant box with some configs
 Vagrant.configure("2") do |config|
   if ENV['HTTP_PROXY'] || ENV['http_proxy']
@@ -28,13 +29,18 @@ Vagrant.configure("2") do |config|
   system "vagrant plugin install vagrant-cachier" unless Vagrant.has_plugin?("vagrant-cachier")
   config.vm.box = "ubuntu/trusty64"
   config.cache.scope = :box
+
+  # Create all no_proxy IP list
+  hosts.each do|vm_name, ip|
+    proxy_ip_list = ("#{proxy_ip_list},#{ip}")
+  end
   hosts.each do|vm_name, ip|
     config.vm.define vm_name do |devstack|
       devstack.vm.hostname = vm_name
         if Vagrant.has_plugin?("vagrant-proxyconf")
           devstack.proxy.http = (ENV['HTTP_PROXY'] || ENV['http_proxy'])
           devstack.proxy.https = (ENV['HTTPS_PROXY'] || ENV['https_proxy'])
-          devstack.proxy.no_proxy = (ENV['NO_PROXY'] || 'localhost,127.0.0.1')
+          devstack.proxy.no_proxy = (ENV['NO_PROXY']+",#{hostname},#{proxy_ip_list}" || 'localhost,127.0.0.1,#{hostname},#{proxy_ip_list}')
         end
         devstack.vm.network :private_network, ip: ip
     # Setup port forwarding in case you wish to see horizon
