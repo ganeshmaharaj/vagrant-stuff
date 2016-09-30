@@ -21,9 +21,10 @@
         create: yes
         dest: ~/.gitconfig
         block: |
-          [core]
-            gitproxy=socks-proxy
+          [url "http://git.openstack.org/"]
+            insteadOf=git://git.openstack.org/
 
+# For now this block is useless. Leaving it be for now.
     - name: Create bin directory
       file:
         path: ~/bin
@@ -35,6 +36,7 @@
         src: socks-proxy.j2
         dest: ~/bin/socks-proxy
         mode: 0755
+# END USELESS BLOCK
 
     - name: Add IP address to NO_PROXY
       lineinfile:
