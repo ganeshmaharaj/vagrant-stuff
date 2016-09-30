@@ -40,7 +40,8 @@ Vagrant.configure("2") do |config|
         if Vagrant.has_plugin?("vagrant-proxyconf")
           devstack.proxy.http = (ENV['HTTP_PROXY'] || ENV['http_proxy'])
           devstack.proxy.https = (ENV['HTTPS_PROXY'] || ENV['https_proxy'])
-          devstack.proxy.no_proxy = (ENV['NO_PROXY']+",#{hostname},#{proxy_ip_list}" || 'localhost,127.0.0.1,#{hostname},#{proxy_ip_list}')
+          nproxy = (ENV['NO_PROXY'] || ENV['no_proxy'])
+          devstack.proxy.no_proxy = ("#{nproxy},#{vm_name},#{proxy_ip_list}" || 'localhost,127.0.0.1,#{vm_name},#{proxy_ip_list}')
         end
         devstack.vm.network :private_network, ip: ip
     # Setup port forwarding in case you wish to see horizon
