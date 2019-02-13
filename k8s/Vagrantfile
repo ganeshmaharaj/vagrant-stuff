@@ -1,0 +1,76 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+require 'fileutils'
+require 'ipaddr'
+
+SUPPORTED_OS = {
+  "ubuntu" => {box: "generic/ubuntu1804", vm_prefix: "ubuntu", home_dir: "vagrant"},
+}
+
+# OS as the first variable so we can use it in other things.
+$os             = (ENV['OS'] || "ubuntu")
+
+# VM variables.
+$num_instances  = (ENV['NODES'] || 3).to_i
+$cpus           = (ENV['CPUS'] || 2).to_i
+$memory         = (ENV['MEMORY'] || 4096).to_i
+$disks          = (ENV['DISKS'] || 1).to_i
+$disk_size      = "10G"
+disk_prefix     = File.basename(File.dirname(__FILE__), "/")
+base_ip         = IPAddr.new("192.52.100.10")
+hosts           = {}
+proxy_ip_list   = ""
+driveletters    = ('a'..'z').to_a
+$box            = SUPPORTED_OS[$os][:box]
+$vm_name_prefix = SUPPORTED_OS[$os][:vm_prefix]
+$home_dir       = SUPPORTED_OS[$os][:home_dir]
+
+# Install plugins that you might need.
+if ENV['http_proxy'] || ENV['HTTP_PROXY']
+  system "vagrant plugin install vagrant-proxyconf" unless Vagrant.has_plugin?("vagrant-proxyconf")
+end
+
+Vagrant.configure("2") do |config|
+  config.vm.box = $box
+
+  config.vm.synced_folder './', '/home/' + $home_dir + '/' + File.basename(Dir.getwd), type: 'rsync'
+
+  #Setup proxies for all machines
+  (1..$num_instances).each do |i|
+    base_ip                                   = base_ip.succ
+    hosts["%s-%02d" % [$vm_name_prefix, i]]   = base_ip.to_s
+  end
+
+  if ENV['http_proxy'] || ENV['HTTP_PROXY']
+    proxy_ip_list = (ENV['no_proxy'] || ENV['NO_PROXY'] || "localhost,127.0.0.1,172.16.10.10,")
+    hosts.each do |vm_name, ip|
+      proxy_ip_list = ("#{proxy_ip_list},#{vm_name},#{ip}")
+    end
+  end
+
+  hosts.each do |vm_name, ip|
+    config.vm.define vm_name do |c|
+      c.vm.hostname = vm_name
+      c.vm.network :private_network, ip: ip, autostart: true
+      c.vm.provider :libvirt do |lv|
+        lv.cpu_mode   = "host-passthrough"
+        lv.nested     = true
+        lv.cpus       = $cpus
+        lv.memory     = $memory
+        (1..$disks).each do |d|
+          lv.storage :file, :device => "hd#{driveletters[d]}", :path => "disk-#{disk_prefix}-#{vm_name}-#{d}.disk", :size => $disk_size, :type => "raw"
+        end
+      end
+      if ENV['http_proxy'] || ENV['HTTP_PROXY']
+        c.proxy.http      = (ENV['http_proxy']||ENV['HTTP_PROXY'])
+        c.proxy.https     = (ENV['https_proxy']||ENV['HTTPS_PROXY'])
+        c.proxy.no_proxy  = ("#{proxy_ip_list}")
+      end
+      if $box['generic/ubuntu']
+        c.vm.provision "shell", privileged: true, path: "generic_ubuntu_hack.sh"
+      end
+      c.vm.provision "shell", privileged: false, path: "setup_system.sh"
+    end
+  end
+end

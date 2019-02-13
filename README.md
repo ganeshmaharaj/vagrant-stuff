@@ -1,2 +1,2 @@
-# vagrant-devstack
-A vagrant devstack VM that will work behind proxies
+# vagrant-stuff
+A repo that contains vagrant scripts that i use for work and will work behind proxies.
