@@ -65,7 +65,8 @@ sudo -E bash -c 'echo "CRIO_NETWORK_OPTIONS=\"--cgroup-manager cgroupfs\"" > /et
 
 swapcount=$(sudo grep '^/dev/\([0-9a-z]*\).*' /proc/swaps | wc -l)
 if [ "$swapcount" != "0" ]; then
-sudo systemctl mask $(sed -n -e 's#^/dev/\([0-9a-z]*\).*#dev-\1.swap#p' /proc/swaps) 2>/dev/null
+  sudo systemctl mask $(sed -n -e 's#^/dev/\([0-9a-z]*\).*#dev-\1.swap#p' /proc/swaps) 2>/dev/null
+  sudo sed -i 's/.*swap/#&/g' /etc/fstab
 else
 	echo "Swap not enabled"
 fi
