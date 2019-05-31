@@ -29,12 +29,12 @@ EOF'
     kubelet=${KUBE_VERSION} \
     kubeadm=${KUBE_VERSION} \
     kubectl=${KUBE_VERSION}
-  if [ "`sudo apt-cache search cri-o-${CRIO_VERSION}`" ];
-  then
-    sudo apt install -y cri-o-${CRIO_VERSION}
-  else
-    sudo apt install -y cri-o
-  fi
+  # cri-o ppa updates are delayed since release. Using a fall-back mechanism to
+  # install the latest version available.
+  while [ -z "`sudo apt-cache search cri-o-${CRIO_VERSION}`" ]; do
+    CRIO_VERSION=$(echo ${CRIO_VERSION}-0.01 | bc)
+  done
+  sudo apt install -y cri-o-${CRIO_VERSION}
 
   # Add docker.io as a registry to crio
   sudo bash -c 'cat <<EOF > /etc/containers/registries.conf
