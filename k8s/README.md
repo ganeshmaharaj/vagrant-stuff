@@ -6,11 +6,12 @@ Small setup that creates a k8s cluster using scripts initially created towards C
 * Centos
 
 ## Defaults
-* OS:     Ubuntu
-* CPUS:   4
-* Memory: 4096MB
-* Disks:  1
-* IPs:    2
+* OS:        Ubuntu
+* Instances: 3
+* CPUS:      4
+* Memory:    4096MB
+* Disks:     1
+* IPs:       2
 
 ## Overrides
 There are two ways to override these variables. (Listed in the order of priority)
