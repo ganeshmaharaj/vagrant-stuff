@@ -9,14 +9,20 @@ KUBE_VERSION=${KUBE_VERSION:-${kube_ver#v}-*}
 crio_ver=$(curl -fsSLI -o /dev/null -w %{url_effective} https://github.com/kubernetes-sigs/cri-o/releases/latest | awk -F '/' '{print $8}')
 CRIO_VERSION=${crio_ver:1:4}
 ARCH=$(arch)
-OS=$(source /etc/os-release && echo $NAME)
+#OS=$(source /etc/os-release && echo $NAME)
+source /etc/os-release
 ADD_NO_PROXY="10.244.0.0/16,10.96.0.0/12"
 ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
 
-
-function deb_install()
+function rpm_install()
 {
-  echo "Install K8s...."
+  sudo yum install -y git
+}
+
+function deb_k8s_install()
+{
+  echo "Install deb based K8s...."
+  sudo apt update
   sudo apt install -y apt-transport-https curl
   curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo -E apt-key add -
   sudo bash -c 'cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
@@ -29,6 +35,34 @@ EOF'
     kubelet=${KUBE_VERSION} \
     kubeadm=${KUBE_VERSION} \
     kubectl=${KUBE_VERSION}
+
+}
+
+function rpm_k8s_install()
+{
+  echo "Installing rpm based k8s..."
+  sudo bash -c 'cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOF'
+
+  sudo setenforce 0
+  sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+
+  sudo -E yum install -y \
+    kubelet-${KUBE_VERSION} \
+    kubeadm-${KUBE_VERSION} \
+    kubectl-${KUBE_VERSION} \
+    --disableexcludes=kubernetes
+}
+
+function deb_crio_install()
+{
   # cri-o ppa updates are delayed since release. Using a fall-back mechanism to
   # install the latest version available.
   while [ -z "`sudo apt-cache search cri-o-${CRIO_VERSION}`" ]; do
@@ -43,22 +77,40 @@ registries = ["docker.io"]
 [registries.insecure]
 registries = ["docker.io"]
 EOF'
-
-  echo "Install Kata..."
-  sudo -E sh -c "echo 'deb http://download.opensuse.org/repositories/home:/katacontainers:/releases:/${ARCH}:/master/xUbuntu_$(lsb_release -rs)/ /' > /etc/apt/sources.list.d/kata-containers.list"
-  curl -sL  http://download.opensuse.org/repositories/home:/katacontainers:/releases:/${ARCH}:/master/xUbuntu_$(lsb_release -rs)/Release.key | sudo apt-key add -
-  sudo -E apt update
-  sudo -E apt -y install kata-runtime kata-proxy kata-shim
 }
 
+function deb_containerd_install()
+{
+  echo "Install containerd..."
+  sudo apt install -y containerd
+}
 
-case "$OS" in
-  *"buntu"*)
-    deb_install;;
+function rpm_containerd_install()
+{
+  sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+  sudo yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
+  sudo yum install -y containerd.io
+  sudo mkdir -p /etc/containerd
+  sudo bash -c 'containerd config default > /etc/containerd/config.toml'
+}
+
+case "$ID" in
+  "ubuntu"*)
+    deb_k8s_install;
+    deb_containerd_install;;
+  "centos")
+    rpm_install;
+    rpm_k8s_install;
+    rpm_containerd_install;;
   *)
     echo "Unknown OS. Exiting Install." && exit 1;;
 esac
 
+#######################
+# Misc system configs
+#######################
 echo "Setup system...."
 sudo -E mkdir -p /etc/sysconfig
 sudo -E bash -c 'echo "CRIO_NETWORK_OPTIONS=\"--cgroup-manager cgroupfs\"" > /etc/sysconfig/crio'
@@ -73,7 +125,9 @@ fi
 
 sudo mkdir -p /etc/sysctl.d/
 cat <<EOT | sudo bash -c "cat > /etc/sysctl.d/60-k8s.conf"
-net.ipv4.ip_forward=1
+net.bridge.bridge-nf-call-iptables  = 1
+net.ipv4.ip_forward                 = 1
+net.bridge.bridge-nf-call-ip6tables = 1
 EOT
 sudo systemctl restart systemd-sysctl
 
@@ -100,10 +154,8 @@ sudo systemctl daemon-reload
 # This will fail at this point, but puts it into a retry loop that
 # will therefore startup later once we have configured with kubeadm.
 echo "The following kubelet command may complain... it is not an error"
-sudo systemctl enable --now kubelet crio || true
+sudo systemctl enable --now kubelet containerd || true
 
-sudo mkdir -p /usr/libexec/cni /opt/cni
-[ ! -e /opt/cni/bin/cni ] && sudo ln -s /usr/libexec/cni /opt/cni/bin
 #Ensure that the system is ready without requiring a reboot
 sudo swapoff -a
 sudo systemctl restart systemd-modules-load.service
@@ -136,7 +188,7 @@ set -o nounset
 
 # We have potentially modified their env files, we need to restart the services.
 sudo systemctl daemon-reload
-sudo systemctl restart crio || true
+sudo systemctl restart containerd || true
 sudo systemctl restart kubelet || true
 
 # Setup kubectl auto-completion
