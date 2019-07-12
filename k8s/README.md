@@ -4,6 +4,8 @@ Small setup that creates a k8s cluster using scripts initially created towards C
 ## Supported OS
 * Ubuntu
 * Centos
+* Debian 9
+* Fedora 30
 
 ## Defaults
 * OS:        Ubuntu
