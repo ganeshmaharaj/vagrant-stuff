@@ -6,8 +6,10 @@ set -o nounset
 # Global Vars
 kube_ver=$(curl -SsL https://storage.googleapis.com/kubernetes-release/release/stable.txt)
 KUBE_VERSION=${KUBE_VERSION:-${kube_ver#v}-*}
-crio_ver=$(curl -fsSLI -o /dev/null -w %{url_effective} https://github.com/kubernetes-sigs/cri-o/releases/latest | awk -F '/' '{print $8}')
+crio_ver=$(curl -fsSLI -o /dev/null -w %{url_effective}  https://github.com/cri-o/cri-o/releases/latest | awk -F '/' '{print $8}')
 CRIO_VERSION=${crio_ver:1:4}
+contd_ver=$(curl -fsSLI -o /dev/null -w %{url_effective} https://github.com/containerd/containerd/releases/latest | awk -F '/' '{print $8}')
+: ${CONTD_VER:=${contd_ver#v}}
 ARCH=$(arch)
 #OS=$(source /etc/os-release && echo $NAME)
 source /etc/os-release
@@ -28,7 +30,6 @@ function deb_k8s_install()
   sudo bash -c 'cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb https://apt.kubernetes.io/ kubernetes-xenial main
 EOF'
-  sudo -E add-apt-repository -y ppa:projectatomic/ppa
   sudo -E apt update
 
   sudo -E apt install -y --allow-downgrades \
@@ -63,6 +64,8 @@ EOF'
 
 function deb_crio_install()
 {
+  sudo -E add-apt-repository -y ppa:projectatomic/ppa
+  sudo -E apt update
   # cri-o ppa updates are delayed since release. Using a fall-back mechanism to
   # install the latest version available.
   while [ -z "`sudo apt-cache search cri-o-${CRIO_VERSION}`" ]; do
@@ -82,7 +85,10 @@ EOF'
 function deb_containerd_install()
 {
   echo "Install containerd..."
-  sudo apt install -y containerd
+  if ! sudo apt install -y containerd ; then
+    echo "NO package.. Installing prebuilt binaries..."
+    curl https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTD_VER}.linux-amd64.tar.gz | sudo tar -C / -zxvf -
+  fi
 }
 
 function rpm_containerd_install()
@@ -97,7 +103,7 @@ function rpm_containerd_install()
 }
 
 case "$ID" in
-  "ubuntu"*)
+  "ubuntu"*|"debian"*)
     deb_k8s_install;
     deb_containerd_install;;
   "centos")
