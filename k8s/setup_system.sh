@@ -18,7 +18,8 @@ ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
 
 function rpm_install()
 {
-  sudo yum install -y git
+  sudo yum install -y git bash-completion
+  echo "source /etc/profile.d/bash_completion.sh" >> $HOME/.bashrc
 }
 
 function deb_k8s_install()
@@ -85,13 +86,10 @@ EOF'
 function deb_containerd_install()
 {
   echo "Install containerd..."
-  if ! sudo apt install -y containerd ; then
-    echo "NO package.. Installing prebuilt binaries..."
-    curl https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTD_VER}.linux-amd64.tar.gz | sudo tar -C / -zxvf -
-  fi
+  sudo apt install -y containerd
 }
 
-function rpm_containerd_install()
+function rpm_containerd_pkg_install()
 {
   sudo yum install -y yum-utils device-mapper-persistent-data lvm2
   sudo yum-config-manager \
@@ -102,14 +100,20 @@ function rpm_containerd_install()
   sudo bash -c 'containerd config default > /etc/containerd/config.toml'
 }
 
+function containerd_bin_install()
+{
+    echo "NO package.. Installing prebuilt binaries..."
+    curl https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTD_VER}.linux-amd64.tar.gz | sudo tar -C / -zxvf -
+}
+
 case "$ID" in
   "ubuntu"*|"debian"*)
     deb_k8s_install;
-    deb_containerd_install;;
-  "centos")
+    if ! deb_containerd_install; then containerd_bin_install; fi;;
+  "centos"|"fedora")
     rpm_install;
     rpm_k8s_install;
-    rpm_containerd_install;;
+    if ! rpm_containerd_install; then containerd_bin_install; fi;;
   *)
     echo "Unknown OS. Exiting Install." && exit 1;;
 esac

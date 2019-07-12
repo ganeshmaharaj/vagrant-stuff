@@ -7,9 +7,10 @@ require 'ipaddr'
 CONFIG = File.join(File.dirname(__FILE__), ".config.rb")
 
 SUPPORTED_OS = {
-  "ubuntu"    => {box: "generic/ubuntu1804", vm_prefix: "u",    home_dir: "vagrant"},
-  "debian9"   => {box: "generic/debian9",    vm_prefix: "d9",   home_dir: "vagrant"},
-  "centos"    => {box: "centos/7",           vm_prefix: "c",    home_dir: "vagrant"},
+  "ubuntu"    => {box: "generic/ubuntu1804", vm_prefix: "u",   home_dir: "vagrant"},
+  "debian9"   => {box: "generic/debian9",    vm_prefix: "d",   home_dir: "vagrant"},
+  "centos"    => {box: "centos/7",           vm_prefix: "c",   home_dir: "vagrant"},
+  "fedora30"  => {box: "generic/fedora30",   vm_prefix: "f",   home_dir: "vagrant"},
 }
 
 ######
@@ -74,6 +75,9 @@ Vagrant.configure("2") do |config|
         lv.nested     = true
         lv.cpus       = $cpus
         lv.memory     = $memory
+        if $box['generic/fedora']
+          lv.disk_bus="sata"
+        end
         (1..$disks).each do |d|
           lv.storage :file, :device => "hd#{driveletters[d]}", :path => "disk-#{disk_prefix}-#{vm_name}-#{d}.disk", :size => $disk_size, :type => "raw"
         end
