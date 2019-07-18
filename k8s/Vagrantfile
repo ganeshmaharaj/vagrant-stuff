@@ -11,6 +11,7 @@ SUPPORTED_OS = {
   "debian9"   => {box: "generic/debian9",    vm_prefix: "d",   home_dir: "vagrant"},
   "centos"    => {box: "centos/7",           vm_prefix: "c",   home_dir: "vagrant"},
   "fedora30"  => {box: "generic/fedora30",   vm_prefix: "f",   home_dir: "vagrant"},
+  "fedora29"  => {box: "generic/fedora29",   vm_prefix: "f",   home_dir: "vagrant"},
 }
 
 ######
