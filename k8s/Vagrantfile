@@ -93,6 +93,8 @@ Vagrant.configure("2") do |config|
         c.vm.provision "shell", privileged: false, path: "generic_ubuntu_hack.sh"
       when /generic.debian/
         c.vm.provision "shell", privileged: false, path: "generic_debian_hack.sh"
+      when /fedora/
+        c.vm.provision "shell", privileged: false, path: "fedora_hack.sh"
       end
       c.vm.provision "shell", privileged: false, path: "setup_system.sh"
     end
