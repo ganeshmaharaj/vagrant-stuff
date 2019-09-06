@@ -2,6 +2,7 @@
 
 set -o errexit
 set -o nounset
+set -o xtrace
 
 # Global Vars
 kube_ver=$(curl -SsL https://storage.googleapis.com/kubernetes-release/release/stable.txt)
@@ -18,7 +19,7 @@ ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
 
 function rpm_install()
 {
-  sudo yum install -y git bash-completion
+  sudo yum -y install git bash-completion
   echo "source /etc/profile.d/bash_completion.sh" >> $HOME/.bashrc
 }
 
@@ -56,6 +57,8 @@ EOF'
   sudo setenforce 0
   sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
+  sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg
+  sudo rpm --import https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
   sudo -E yum install -y \
     kubelet-${KUBE_VERSION} \
     kubeadm-${KUBE_VERSION} \
@@ -91,8 +94,8 @@ function deb_containerd_install()
 
 function rpm_containerd_pkg_install()
 {
-  sudo yum install -y yum-utils device-mapper-persistent-data lvm2
-  sudo yum-config-manager \
+  sudo yum -y install yum-utils device-mapper-persistent-data lvm2
+  sudo yum-config-manager -y \
     --add-repo \
     https://download.docker.com/linux/centos/docker-ce.repo
   sudo yum install -y containerd.io
@@ -103,6 +106,9 @@ function rpm_containerd_pkg_install()
 function containerd_bin_install()
 {
     echo "NO package.. Installing prebuilt binaries..."
+    while ! $(curl --output /dev/null --silent --head --fail https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTD_VER}.linux-amd64.tar.gz); do
+      CONTD_VER=${CONTD_VER%.*}.$((${CONTD_VER##*.}-1))
+    done
     curl https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTD_VER}.linux-amd64.tar.gz | sudo tar -C / -zxvf -
 }
 
