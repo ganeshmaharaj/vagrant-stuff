@@ -23,6 +23,12 @@ function rpm_install()
   echo "source /etc/profile.d/bash_completion.sh" >> $HOME/.bashrc
 }
 
+function dnf_install()
+{
+  sudo dnf install -y git bash-completion
+  echo "source /etc/profile.d/bash_completion.sh" >> $HOME/.bashrc
+}
+
 function deb_k8s_install()
 {
   echo "Install deb based K8s...."
@@ -66,6 +72,31 @@ EOF'
     --disableexcludes=kubernetes
 }
 
+function dnf_k8s_install()
+{
+  echo "Installing rpm based k8s..."
+  sudo bash -c 'cat <<EOF > /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+EOF'
+
+  sudo setenforce 0
+  sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+
+  #sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg
+  #sudo rpm --import https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+  sudo -E dnf install -y \
+    kubelet-${KUBE_VERSION} \
+    kubeadm-${KUBE_VERSION} \
+    kubectl-${KUBE_VERSION} \
+    --disableexcludes=kubernetes
+}
+
 function deb_crio_install()
 {
   sudo -E add-apt-repository -y ppa:projectatomic/ppa
@@ -103,6 +134,17 @@ function rpm_containerd_pkg_install()
   sudo bash -c 'containerd config default > /etc/containerd/config.toml'
 }
 
+function dnf_containerd_pkg_install()
+{
+  sudo -E dnf -y install yum-utils device-mapper-persistent-data lvm2
+  sudo yum-config-manager -y \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
+  sudo dnf install -y containerd.io
+  sudo mkdir -p /etc/containerd
+  sudo bash -c 'containerd config default > /etc/containerd/config.toml'
+}
+
 function containerd_bin_install()
 {
     echo "NO package.. Installing prebuilt binaries..."
@@ -116,10 +158,14 @@ case "$ID" in
   "ubuntu"*|"debian"*)
     deb_k8s_install;
     if ! deb_containerd_install; then containerd_bin_install; fi;;
-  "centos"|"fedora")
+  "centos")
     rpm_install;
     rpm_k8s_install;
     if ! rpm_containerd_install; then containerd_bin_install; fi;;
+  "fedora")
+    dnf_install;
+    dnf_k8s_install;
+    if ! dnf_containerd_install; then containerd_bin_install; fi;;
   *)
     echo "Unknown OS. Exiting Install." && exit 1;;
 esac
