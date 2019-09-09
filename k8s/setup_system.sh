@@ -190,6 +190,8 @@ cat <<EOT | sudo bash -c "cat > /etc/sysctl.d/60-k8s.conf"
 net.bridge.bridge-nf-call-iptables  = 1
 net.ipv4.ip_forward                 = 1
 net.bridge.bridge-nf-call-ip6tables = 1
+net.ipv4.conf.all.rp_filter         = 1
+net.ipv4.conf.all.rp_filter         = 1
 EOT
 sudo systemctl restart systemd-sysctl
 
