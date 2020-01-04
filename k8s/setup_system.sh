@@ -20,6 +20,8 @@ ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
 function rpm_install()
 {
   sudo yum -y install git bash-completion
+  # Deps for k8s
+  sudo yum -y install iproute-tc
   echo "source /etc/profile.d/bash_completion.sh" >> $HOME/.bashrc
 }
 
@@ -33,7 +35,7 @@ function deb_k8s_install()
 {
   echo "Install deb based K8s...."
   sudo apt update
-  sudo apt install -y apt-transport-https curl
+  sudo apt install -y apt-transport-https curl gnupg2
   curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo -E apt-key add -
   sudo bash -c 'cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb https://apt.kubernetes.io/ kubernetes-xenial main
@@ -56,15 +58,13 @@ name=Kubernetes
 baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
 enabled=1
 gpgcheck=1
-repo_gpgcheck=1
+repo_gpgcheck=0
 gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 EOF'
 
   sudo setenforce 0
   sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
-  sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg
-  sudo rpm --import https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
   sudo -E yum install -y \
     kubelet-${KUBE_VERSION} \
     kubeadm-${KUBE_VERSION} \
@@ -74,22 +74,21 @@ EOF'
 
 function dnf_k8s_install()
 {
-  echo "Installing rpm based k8s..."
+  echo "Installing dnf based k8s..."
   sudo bash -c 'cat <<EOF > /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
 baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
 enabled=1
 gpgcheck=1
-repo_gpgcheck=1
+# https://github.com/containers/libpod/issues/4431 maybe causing a 141 error code
+repo_gpgcheck=0
 gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 EOF'
 
   sudo setenforce 0
   sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
-  #sudo rpm --import https://packages.cloud.google.com/yum/doc/yum-key.gpg
-  #sudo rpm --import https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
   sudo -E dnf install -y \
     kubelet-${KUBE_VERSION} \
     kubeadm-${KUBE_VERSION} \
@@ -156,19 +155,17 @@ function containerd_bin_install()
 
 case "$ID" in
   "ubuntu"*|"debian"*)
-    deb_k8s_install;
-    if ! deb_containerd_install; then containerd_bin_install; fi;;
+    deb_k8s_install;;
   "centos")
     rpm_install;
-    rpm_k8s_install;
-    if ! rpm_containerd_install; then containerd_bin_install; fi;;
+    rpm_k8s_install;;
   "fedora")
     dnf_install;
-    dnf_k8s_install;
-    if ! dnf_containerd_install; then containerd_bin_install; fi;;
+    dnf_k8s_install;;
   *)
     echo "Unknown OS. Exiting Install." && exit 1;;
 esac
+containerd_bin_install
 
 #######################
 # Misc system configs
