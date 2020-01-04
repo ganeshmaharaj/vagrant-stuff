@@ -2,11 +2,13 @@
 Small setup that creates a k8s cluster using scripts initially created towards ClearLinux.
 
 ## Supported OS
-* Ubuntu
-* Centos
+* Ubuntu 18.04
+* Centos 7
+* Centos 8
 * Debian 9
-* Fedora 29
+* Debian 10
 * Fedora 30
+* Fedora 31
 
 ## Defaults
 * OS:        Ubuntu
@@ -28,7 +30,7 @@ There are two ways to override these variables. (Listed in the order of priority
 2. Create `.config.rb` file in the folder where Vagrantfile is and it will be taken into account.
 For eg: to create a single VM of fedora29 with 8 cpus and 8GiB of memory you will create `.config.rb` file with the below contents.
   ```
-  $os = "fedora29"
+  $os = "ubuntu"
   $num_instances = 1
   $cpus = 8
   $memory = 8192
