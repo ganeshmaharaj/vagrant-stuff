@@ -11,6 +11,8 @@ crio_ver=$(curl -fsSLI -o /dev/null -w %{url_effective}  https://github.com/cri-
 CRIO_VERSION=${crio_ver:1:4}
 contd_ver=$(curl -fsSLI -o /dev/null -w %{url_effective} https://github.com/containerd/containerd/releases/latest | awk -F '/' '{print $8}')
 : ${CONTD_VER:=${contd_ver#v}}
+helm_ver=$(curl -fsSLI -o /dev/null -w %{url_effective} https://github.com/helm/helm/releases/latest | awk -F '/' '{print $8}')
+: ${HELM_VER:=${helm_ver}}
 ARCH=$(arch)
 #OS=$(source /etc/os-release && echo $NAME)
 source /etc/os-release
@@ -153,6 +155,11 @@ function containerd_bin_install()
     curl https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTD_VER}.linux-amd64.tar.gz | sudo tar -C / -zxvf -
 }
 
+function helm_bin_install()
+{
+  curl https://get.helm.sh/helm-${HELM_VER}-linux-amd64.tar.gz | sudo tar -C /usr/local/bin --strip-components=1 -zxvf -
+}
+
 case "$ID" in
   "ubuntu"*|"debian"*)
     deb_k8s_install;;
@@ -166,6 +173,7 @@ case "$ID" in
     echo "Unknown OS. Exiting Install." && exit 1;;
 esac
 containerd_bin_install
+helm_bin_install
 
 #######################
 # Misc system configs
