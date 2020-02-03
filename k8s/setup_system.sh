@@ -60,14 +60,17 @@ name=Kubernetes
 baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
 enabled=1
 gpgcheck=1
-repo_gpgcheck=0
+repo_gpgcheck=1
 gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 EOF'
 
   sudo setenforce 0
   sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
 
-  sudo -E yum install -y \
+  # Adding GPG_TTY so that gpg key imports as part of this command does not end
+  # up with exit code 147. Check
+  # https://github.com/containers/libpod/issues/4431#issuecomment-580681084
+  GPG_TTY=/dev/null sudo -E yum install -y \
     kubelet-${KUBE_VERSION} \
     kubeadm-${KUBE_VERSION} \
     kubectl-${KUBE_VERSION} \
