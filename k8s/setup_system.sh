@@ -21,7 +21,7 @@ ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
 
 function rpm_install()
 {
-  sudo -E yum -y install git bash-completion
+  sudo -E yum -y install git bash-completion tar
   # Deps for k8s
   sudo -E yum -y install iproute-tc
   echo "source /etc/profile.d/bash_completion.sh" >> $HOME/.bashrc
@@ -64,7 +64,7 @@ repo_gpgcheck=1
 gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 EOF'
 
-  if [ "$(getenforce) | tr [A-Z][a-z]" != "disabled" ]; then
+  if [ "$(getenforce | tr [A-Z] [a-z])" != "disabled" ]; then
     sudo -E setenforce 0
     sudo -E sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
   fi
