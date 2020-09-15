@@ -156,10 +156,10 @@ function dnf_containerd_pkg_install()
 function containerd_bin_install()
 {
     echo "NO package.. Installing prebuilt binaries..."
-    while ! $(curl --output /dev/null --silent --head --fail https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTD_VER}.linux-amd64.tar.gz); do
+    while ! $(curl --output /dev/null --head --location https://github.com/containerd/containerd/releases/download/v${CONTD_VER}/cri-containerd-cni-${CONTD_VER}-linux-amd64.tar.gz); do
       CONTD_VER=${CONTD_VER%.*}.$((${CONTD_VER##*.}-1))
     done
-    curl https://storage.googleapis.com/cri-containerd-release/cri-containerd-${CONTD_VER}.linux-amd64.tar.gz | sudo -E tar -C / -zxvf -
+    curl --location https://github.com/containerd/containerd/releases/download/v${CONTD_VER}/cri-containerd-cni-${CONTD_VER}-linux-amd64.tar.gz --output - | sudo -E tar -C / -zxvf -
 }
 
 function helm_bin_install()
