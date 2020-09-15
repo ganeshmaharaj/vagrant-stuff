@@ -32,6 +32,9 @@ base_ip         = IPAddr.new("10.10.100.10")
 hosts           = {}
 proxy_ip_list   = ""
 driveletters    = ('a'..'z').to_a
+autoprovision   = (ENV['AUTOPROVISION'] || false)
+randstrsource   = ("a".."z").to_a + (0..9).to_a
+kubetoken = ""; 6.times{ kubetoken += randstrsource[rand(randstrsource.size)].to_s }; kubetoken += '.'; 16.times{ kubetoken += randstrsource[rand(randstrsource.size)].to_s }
 
 # Now override with config from file
 if File.exist? (CONFIG)
@@ -111,6 +114,19 @@ Vagrant.configure("2") do |config|
         c.vm.provision :reload
       end
       c.vm.provision "shell", privileged: false, path: "setup_system.sh"
+      if autoprovision
+        if c.vm.hostname == hosts.keys[0]
+          c.vm.provision "init", type: "shell", privileged: false, env: {"TOKEN" => kubetoken, "CLRK8S_NOPROMPT" => true, "MASTER_IP" => hosts.values[0]}, inline: <<-ESHELL
+            /home/vagrant/cloud-native-setup/clr-k8s-examples/create_stack.sh init
+            /home/vagrant/cloud-native-setup/clr-k8s-examples/create_stack.sh cni
+          ESHELL
+        end
+        if c.vm.hostname != hosts.keys[0]
+          c.vm.provision "join", type: "shell", after: "init", privileged: false, env: {"TOKEN" => kubetoken, "MASTER_IP" => hosts.values[0]}, inline: <<-ESHELL
+            sudo -E kubeadm join $MASTER_IP:6443 --token ${TOKEN} --discovery-token-unsafe-skip-ca-verification
+          ESHELL
+        end
+      end
     end
   end
 end
