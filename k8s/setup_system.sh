@@ -69,6 +69,11 @@ EOF'
     sudo -E sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
   fi
 
+  # Disable firewalld incase it is running
+  if ! $(sudo systemctl is-active firewalld); then
+    sudo systemctl disable --now firewalld
+  fi
+
   # Adding GPG_TTY so that gpg key imports as part of this command does not end
   # up with exit code 147. Check
   # https://github.com/containers/libpod/issues/4431#issuecomment-580681084
@@ -96,6 +101,11 @@ EOF'
   if [ "$(getenforce) | tr [A-Z][a-z]" != "disabled" ]; then
     sudo -E setenforce 0
     sudo -E sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+  fi
+
+  # Disable firewalld incase it is running
+  if ! $(sudo systemctl is-active firewalld); then
+    sudo systemctl disable --now firewalld
   fi
 
   sudo -E dnf install -y \
