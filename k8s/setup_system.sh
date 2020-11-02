@@ -70,7 +70,7 @@ EOF'
   fi
 
   # Disable firewalld incase it is running
-  if ! $(sudo systemctl is-active firewalld); then
+  if $(sudo systemctl is-active firewalld > /dev/null); then
     sudo systemctl disable --now firewalld
   fi
 
@@ -104,7 +104,7 @@ EOF'
   fi
 
   # Disable firewalld incase it is running
-  if ! $(sudo systemctl is-active firewalld); then
+  if $(sudo systemctl is-active firewalld > /dev/null); then
     sudo systemctl disable --now firewalld
   fi
 
