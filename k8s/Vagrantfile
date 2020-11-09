@@ -34,6 +34,7 @@ hosts           = {}
 proxy_ip_list   = ""
 driveletters    = ('a'..'z').to_a
 autoprovision   = (ENV['AUTOPROVISION'] || false)
+contconfig     = (ENV['CONTCONFIG'] || "")
 randstrsource   = ("a".."z").to_a + (0..9).to_a
 kubetoken = ""; 6.times{ kubetoken += randstrsource[rand(randstrsource.size)].to_s }; kubetoken += '.'; 16.times{ kubetoken += randstrsource[rand(randstrsource.size)].to_s }
 
@@ -113,6 +114,13 @@ Vagrant.configure("2") do |config|
       # effect.
       if $box.include? "fedora32"
         c.vm.provision :reload
+      end
+      if File.exist? (contconfig)
+        c.vm.provision "file", source: contconfig, destination: "/tmp/config.toml"
+        c.vm.provision "shell", privileged: true, inline: <<-ESHELL
+          mkdir -p /etc/containerd
+          mv /tmp/config.toml /etc/containerd/
+        ESHELL
       end
       c.vm.provision "shell", privileged: false, path: "setup_system.sh"
       if autoprovision
