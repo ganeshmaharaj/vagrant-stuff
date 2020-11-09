@@ -12,6 +12,7 @@ SUPPORTED_OS = {
   "debian10"   => {box: "generic/debian10",  vm_prefix: "d",   home_dir: "vagrant"},
   "centos7"    => {box: "centos/7",           vm_prefix: "c",   home_dir: "vagrant"},
   "centos8"    => {box: "centos/8",           vm_prefix: "c",   home_dir: "vagrant"},
+  "fedora33"  => {box: "fedora/33-cloud-base",   vm_prefix: "f",   home_dir: "vagrant"},
   "fedora32"  => {box: "generic/fedora32",   vm_prefix: "f",   home_dir: "vagrant"},
   "fedora31"  => {box: "generic/fedora31",   vm_prefix: "f",   home_dir: "vagrant"},
   "fedora30"  => {box: "generic/fedora30",   vm_prefix: "f",   home_dir: "vagrant"},

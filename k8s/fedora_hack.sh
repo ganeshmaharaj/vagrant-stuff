@@ -5,8 +5,9 @@ set -o nounset
 set -o xtrace
 
 echo "Disabling firewalld..."
-sudo systemctl stop firewalld
-sudo systemctl disable firewalld
+if $(sudo systemctl is-active firewalld > /dev/null); then
+  sudo systemctl disable --now firewalld
+fi
 
 source /etc/os-release
 
