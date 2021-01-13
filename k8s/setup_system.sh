@@ -21,9 +21,10 @@ ADD_NO_PROXY+=",$(hostname -I | sed 's/[[:space:]]/,/g')"
 
 function rpm_install()
 {
+  sudo -E yum -y update
   sudo -E yum -y install git bash-completion tar
   # Deps for k8s
-  sudo -E yum -y install iproute-tc
+  sudo -E yum -y install iproute-tc || true
   echo "source /etc/profile.d/bash_completion.sh" >> $HOME/.bashrc
 }
 
@@ -199,12 +200,11 @@ echo "Setup system...."
 sudo -E mkdir -p /etc/sysconfig
 sudo -E bash -c 'echo "CRIO_NETWORK_OPTIONS=\"--cgroup-manager cgroupfs\"" > /etc/sysconfig/crio'
 
-swapcount=$(sudo -E grep '^/dev/\([0-9a-z]*\).*' /proc/swaps | wc -l)
-if [ "$swapcount" != "0" ]; then
+if [ $(sudo -E grep '^/dev/\([0-9a-z]*\).*' /proc/swaps | wc -l) -gt 0 ]; then
   sudo -E systemctl mask $(sed -n -e 's#^/dev/\([0-9a-z]*\).*#dev-\1.swap#p' /proc/swaps) 2>/dev/null
+fi
+if [ $(sudo -E grep -c swap /etc/fstab) -gt 0 ]; then
   sudo -E sed -i 's/.*swap/#&/g' /etc/fstab
-else
-	echo "Swap not enabled"
 fi
 
 sudo -E mkdir -p /etc/sysctl.d/
