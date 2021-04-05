@@ -31,6 +31,7 @@ function rpm_install()
 function dnf_install()
 {
   sudo -E dnf install -y git bash-completion
+  sudo -E dnf install -y iproute-tc || true
   echo "source /etc/profile.d/bash_completion.sh" >> $HOME/.bashrc
 }
 
@@ -184,7 +185,7 @@ case "$ID" in
   "centos")
     rpm_install;
     rpm_k8s_install;;
-  "fedora")
+  "fedora"|"almalinux")
     dnf_install;
     dnf_k8s_install;;
   *)
