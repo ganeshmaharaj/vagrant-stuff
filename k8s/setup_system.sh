@@ -9,7 +9,8 @@ kube_ver=$(curl -SsL https://storage.googleapis.com/kubernetes-release/release/s
 KUBE_VERSION=${KUBE_VERSION:-${kube_ver#v}-*}
 crio_ver=$(curl -fsSLI -o /dev/null -w %{url_effective}  https://github.com/cri-o/cri-o/releases/latest | awk -F '/' '{print $8}')
 CRIO_VERSION=${crio_ver:1:4}
-contd_ver=$(curl -q https://api.github.com/repos/containerd/containerd/releases | grep "tag_name" | awk -F '"' '{print $4}'  | sort -rV | head -1)
+#contd_ver=$(curl -q https://api.github.com/repos/containerd/containerd/releases | grep "tag_name" | awk -F '"' '{print $4}'  | sort -rV | head -1)
+contd_ver=$(curl -fsSLI -o /dev/null -w %{url_effective} https://github.com/containerd/containerd/releases/latest | awk -F '/' '{print $8}')
 : ${CONTD_VER:=${contd_ver#v}}
 helm_ver=$(curl -fsSLI -o /dev/null -w %{url_effective} https://github.com/helm/helm/releases/latest | awk -F '/' '{print $8}')
 : ${HELM_VER:=${helm_ver}}
@@ -185,7 +186,7 @@ case "$ID" in
   "centos")
     rpm_install;
     rpm_k8s_install;;
-  "fedora"|"almalinux")
+  "fedora"|"almalinux"|"rocky")
     dnf_install;
     dnf_k8s_install;;
   *)
