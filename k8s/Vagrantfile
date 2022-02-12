@@ -7,18 +7,19 @@ require 'ipaddr'
 CONFIG = File.join(File.dirname(__FILE__), ".config.rb")
 
 SUPPORTED_OS = {
-  "almalinux8"      => {box: "almalinux/8",       vm_prefix: "a",   home_dir: "vagrant"},
-  "centos7"         => {box: "centos/7",           vm_prefix: "c",   home_dir: "vagrant"},
-  "centos8"         => {box: "centos/8",           vm_prefix: "c",   home_dir: "vagrant"},
-  "debian10"        => {box: "generic/debian10",  vm_prefix: "d",   home_dir: "vagrant"},
-  "debian9"         => {box: "generic/debian9",    vm_prefix: "d",   home_dir: "vagrant"},
-  "fedora30"        => {box: "generic/fedora30",   vm_prefix: "f",   home_dir: "vagrant"},
-  "fedora31"        => {box: "generic/fedora31",   vm_prefix: "f",   home_dir: "vagrant"},
-  "fedora32"        => {box: "generic/fedora32",   vm_prefix: "f",   home_dir: "vagrant"},
-  "fedora33"        => {box: "fedora/33-cloud-base",   vm_prefix: "f",   home_dir: "vagrant"},
-  "rockylinux8"     => {box: "generic/rocky8",   vm_prefix: "r",   home_dir: "vagrant"},
-  "ubuntu1804"      => {box: "generic/ubuntu1804", vm_prefix: "u",   home_dir: "vagrant"},
-  "ubuntu2004"      => {box: "generic/ubuntu2004", vm_prefix: "u",   home_dir: "vagrant"},
+  "almalinux8"   =>  {box:  "almalinux/8",           vm_prefix:  "a",  home_dir:  "vagrant"},
+  "centos7"      =>  {box:  "centos/7",              vm_prefix:  "c",  home_dir:  "vagrant"},
+  "centos8"      =>  {box:  "centos/8",              vm_prefix:  "c",  home_dir:  "vagrant"},
+  "debian10"     =>  {box:  "generic/debian10",      vm_prefix:  "d",  home_dir:  "vagrant"},
+  "debian9"      =>  {box:  "generic/debian9",       vm_prefix:  "d",  home_dir:  "vagrant"},
+  "fedora30"     =>  {box:  "generic/fedora30",      vm_prefix:  "f",  home_dir:  "vagrant"},
+  "fedora31"     =>  {box:  "generic/fedora31",      vm_prefix:  "f",  home_dir:  "vagrant"},
+  "fedora32"     =>  {box:  "generic/fedora32",      vm_prefix:  "f",  home_dir:  "vagrant"},
+  "fedora33"     =>  {box:  "fedora/33-cloud-base",  vm_prefix:  "f",  home_dir:  "vagrant"},
+  "fedora35"     =>  {box:  "fedora/35-cloud-base",  vm_prefix:  "f",  home_dir:  "vagrant"},
+  "rockylinux8"  =>  {box:  "generic/rocky8",        vm_prefix:  "r",  home_dir:  "vagrant"},
+  "ubuntu1804"   =>  {box:  "generic/ubuntu1804",    vm_prefix:  "u",  home_dir:  "vagrant"},
+  "ubuntu2004"   =>  {box:  "generic/ubuntu2004",    vm_prefix:  "u",  home_dir:  "vagrant"},
 }
 
 ######
@@ -42,9 +43,7 @@ randstrsource   = ("a".."z").to_a + (0..9).to_a
 kubetoken = ""; 6.times{ kubetoken += randstrsource[rand(randstrsource.size)].to_s }; kubetoken += '.'; 16.times{ kubetoken += randstrsource[rand(randstrsource.size)].to_s }
 
 # Now override with config from file
-if File.exist? (CONFIG)
-  require CONFIG
-end
+load CONFIG if File.exist?(CONFIG)
 
 # Now variables derived
 $num_instances  = (ENV['NODES'] || $num_instances).to_i
