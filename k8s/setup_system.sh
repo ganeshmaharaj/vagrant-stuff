@@ -177,6 +177,53 @@ function containerd_bin_install()
     curl --location https://github.com/containerd/containerd/releases/download/v${CONTD_VER}/cri-containerd-cni-${CONTD_VER}-linux-amd64.tar.gz --output - | sudo -E tar -C / -zxvf -
 }
 
+function containerd_config_install()
+{
+  conf_file="/etc/containerd/config.toml"
+  runc_runtime="plugins.\"io.containerd.grpc.v1.cri\".containerd.runtimes.runc"
+  runc_type="io.containerd.runc.v2"
+  runc_options="${runc_runtime}.options"
+
+  sudo -E mkdir -p /etc/containerd
+  if [ -f ${conf_file} ]; then
+    sudo cp ${conf_file} /etc/containerd/config.toml.orig
+
+    if grep -q 'version' ${conf_file}; then
+      sudo -E bash -c "sed -i 's/version.*/version = 2/g' ${conf_file}"
+    else
+      sudo -E bash -c "sed -i '1 i version = 2' ${conf_file}"
+    fi
+
+    if grep -q "\[${runc_runtime}\]" $conf_file; then
+      echo "runc config exists. Over-writing values..."
+      sudo -E sed -i "/\[${runc_runtime}\]/,+1s#runtime_type.*#runtime_type = \"${runc_type}\"#" ${conf_file}
+    else
+    sudo -E bash -c 'cat <<EOF >> '${conf_file}'
+['"${runc_runtime}"']
+  runtime_type = '${runc_type}'
+EOF'
+    fi
+
+    if grep -q "\[${runc_options}\]" ${conf_file}; then
+      echo  "runc options exists. over-writing values...."
+      sudo -E sed -i "/\[${runc_options}\]/,+1s#SystemdCgroup.*#SystemdCgroup = true#" ${conf_file}
+    else
+      sudo -E bash -c 'cat <<EOF >> '${conf_file}'
+  ['"${runc_options}"']
+    SystemdCgroup = true
+EOF'
+    fi
+  else
+    sudo -E bash -c 'cat <<EOF> /etc/containerd/config.toml
+version = 2
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+  runtime_type = "io.containerd.runc.v2"
+  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+    SystemdCgroup = true
+EOF'
+  fi
+}
+
 function helm_bin_install()
 {
   curl https://get.helm.sh/helm-${HELM_VER}-linux-amd64.tar.gz | sudo -E tar -C /usr/local/bin --strip-components=1 -zxvf -
@@ -190,6 +237,7 @@ function runc_bin_install()
 }
 
 containerd_bin_install
+containerd_config_install
 helm_bin_install
 
 case "$ID" in
