@@ -14,6 +14,8 @@ contd_ver=$(curl -fsSLI -o /dev/null -w %{url_effective} https://github.com/cont
 : ${CONTD_VER:=${contd_ver#v}}
 helm_ver=$(curl -fsSLI -o /dev/null -w %{url_effective} https://github.com/helm/helm/releases/latest | awk -F '/' '{print $8}')
 : ${HELM_VER:=${helm_ver}}
+runc_ver=$(curl -fsSLI -o /dev/null -w %{url_effective} https://github.com/opencontainers/runc/releases/latest | awk -F '/' '{print $8}')
+: ${RUNC_VER:=${runc_ver}}
 ARCH=$(arch)
 #OS=$(source /etc/os-release && echo $NAME)
 source /etc/os-release
@@ -180,9 +182,22 @@ function helm_bin_install()
   curl https://get.helm.sh/helm-${HELM_VER}-linux-amd64.tar.gz | sudo -E tar -C /usr/local/bin --strip-components=1 -zxvf -
 }
 
+function runc_bin_install()
+{
+  sudo -E bash -c "curl -L https://github.com/opencontainers/runc/releases/download/${RUNC_VER}/runc.amd64 --output /usr/local/sbin/runc"
+  sudo -E chmod +x /usr/local/sbin/runc
+
+}
+
+containerd_bin_install
+helm_bin_install
+
 case "$ID" in
-  "ubuntu"*|"debian"*)
+  "ubuntu"*)
     deb_k8s_install;;
+  "debian"*)
+    deb_k8s_install;
+    runc_bin_install;;
   "centos")
     rpm_install;
     rpm_k8s_install;;
@@ -192,8 +207,6 @@ case "$ID" in
   *)
     echo "Unknown OS. Exiting Install." && exit 1;;
 esac
-containerd_bin_install
-helm_bin_install
 
 #######################
 # Misc system configs
